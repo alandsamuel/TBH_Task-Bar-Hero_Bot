@@ -42,7 +42,7 @@ def open_set_region_drag(x, y, width, height):
     info("Region draw: opening overlay (dimmed, captures mouse)")
     window, canvas, bar = _create_overlay()
     window.update_idletasks()
-    info(
+    debug(
         "Region draw: canvas at screen "
         f"({canvas.winfo_rootx()}, {canvas.winfo_rooty()}) "
         f"size {canvas.winfo_width()}x{canvas.winfo_height()}"
@@ -53,12 +53,12 @@ def open_set_region_drag(x, y, width, height):
         drag["rect_id"] = _draw_region_on_canvas(
             canvas, x.get(), y.get(), width.get(), height.get(), outline="#88ff88"
         )
-        info(
+        debug(
             f"Region draw: showing current region "
             f"({x.get()}, {y.get()}) {width.get()}x{height.get()}"
         )
     else:
-        info("Region draw: no current region to show — drag a new rectangle")
+        debug("Region draw: no current region to show — drag a new rectangle")
 
     def close(_event=None):
         if _event is not None:
@@ -69,7 +69,7 @@ def open_set_region_drag(x, y, width, height):
     def on_press(event):
         drag["start_x"] = event.x_root
         drag["start_y"] = event.y_root
-        info(f"Region draw: press at screen ({event.x_root}, {event.y_root})")
+        debug(f"Region draw: press at screen ({event.x_root}, {event.y_root})")
         if drag["rect_id"] is not None:
             canvas.delete(drag["rect_id"])
             drag["rect_id"] = None
@@ -95,7 +95,7 @@ def open_set_region_drag(x, y, width, height):
         top = min(drag["start_y"], event.y_root)
         region_width = abs(event.x_root - drag["start_x"])
         region_height = abs(event.y_root - drag["start_y"])
-        info(
+        debug(
             f"Region draw: release at ({event.x_root}, {event.y_root}) "
             f"→ {region_width}x{region_height} px"
         )
@@ -114,7 +114,7 @@ def open_set_region_drag(x, y, width, height):
         y.set(int(top))
         width.set(int(region_width))
         height.set(int(region_height))
-        info(f"Region draw: applied ({left}, {top}) {region_width}x{region_height}")
+        debug(f"Region draw: applied ({left}, {top}) {region_width}x{region_height}")
         close()
 
     _bind_drag(window, canvas, bar, on_press, on_motion, on_release)
