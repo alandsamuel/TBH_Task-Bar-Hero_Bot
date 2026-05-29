@@ -50,14 +50,18 @@ Wider ranges look more human but slow the loop slightly.
 
 All settings are edited in the GUI and saved to `resources/config.yml` when you close the app. Template filenames are **base names** (e.g. `auto_fill.png`); scaled assets use suffixes `_1-25`, `_1-50`, or `_2` depending on window scale.
 
-## Building an executable (optional)
+## Building an executable
+
+See **[RELEASES.md](RELEASES.md)** for local PyInstaller builds, GitHub Actions artifacts, and publishing releases.
+
+Quick local build:
 
 ```bash
 pip install pyinstaller
 pyinstaller --name TBHHelper --add-data "resources;resources" --add-data "assets;assets" main.py
 ```
 
-The executable will be in `dist/TBHHelper/TBHHelper.exe`.
+Output: `dist/TBHHelper/TBHHelper.exe`
 
 ## Template images
 

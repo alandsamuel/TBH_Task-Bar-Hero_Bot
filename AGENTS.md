@@ -85,7 +85,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Optional EXE: see `README.md` (PyInstaller bundles `resources/` and `assets/`).
+Optional EXE and GitHub releases: see `RELEASES.md`. CI: `.github/workflows/build.yml`.
 
 ## Common tasks
 
