@@ -1,0 +1,35 @@
+search_region:
+  x: 0
+  y: 800
+  width: 1000
+  height: 650
+matching:
+  threshold: 0.7
+timeouts:
+  loop_ms: 1500
+  after_click:
+    min: 0.5
+    max: 1.0
+combine_flow:
+  wait_ms: 3000
+  template: assets/combine.png
+  back_template: assets/back_arrow.png
+periodic_stash_sort:
+  interval_ms: 30000
+  stash_template: assets/stash_all.png
+  sort_template: assets/sort.png
+chest_check:
+  templates:
+  - name: boss_chest
+    template: assets/boss_chest_icon.png
+  - name: chest
+    template: assets/chest_icon.png
+steps:
+- name: open_chest
+- name: auto_fill
+  template: assets/auto_fill.png
+- name: stash_all
+  template: assets/stash_all.png
+- name: close_stash
+  template: assets/back_arrow.png
+log_lvl: INFO
