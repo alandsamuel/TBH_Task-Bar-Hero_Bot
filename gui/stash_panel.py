@@ -157,6 +157,13 @@ def _timing_tab(notebook):
         "When a button or chest icon is not found, the bot waits a random time in this range (seconds) "
         "before searching again. Wider ranges look less robotic.",
     )
+    row = _seconds_range_row(panel, row, "Step wait limit", dict["timeouts"]["step_wait"])
+    row = _help(
+        panel,
+        row,
+        "While waiting for a chest icon or stash step button, the helper gives up after a random time "
+        "in this range (seconds) and skips to the next step. Prevents getting stuck forever.",
+    )
 
     row = _section(panel, row, "After successful clicks")
     row = _seconds_range_row(panel, row, "Pause after click", dict["timeouts"]["after_click"])

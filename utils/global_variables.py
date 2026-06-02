@@ -14,3 +14,4 @@ current_step_index = 0
 status_message = "Idle"
 status_label = None
 combine_check_pending = False
+step_wait_deadline = None

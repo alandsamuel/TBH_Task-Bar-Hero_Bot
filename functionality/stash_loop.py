@@ -1,3 +1,5 @@
+import time
+
 import utils.global_variables as gv
 from functionality.image_search import find_template
 from utils.config import (
@@ -9,7 +11,7 @@ from utils.config import (
     step_entries,
     template_path_for,
 )
-from wrappers.logging_wrapper import debug, info
+from wrappers.logging_wrapper import debug, info, warning
 from wrappers.win32api_wrapper import (
     click_mouse_with_coordinates,
     right_click_mouse_with_coordinates,
@@ -19,6 +21,31 @@ from wrappers.win32api_wrapper import (
 
 def _steps():
     return step_entries()
+
+
+def _clear_step_wait_deadline():
+    gv.step_wait_deadline = None
+
+
+def _ensure_step_wait_deadline():
+    if gv.step_wait_deadline is None:
+        gv.step_wait_deadline = time.monotonic() + random_timeout(dict["timeouts"]["step_wait"])
+
+
+def _step_wait_timed_out():
+    return gv.step_wait_deadline is not None and time.monotonic() >= gv.step_wait_deadline
+
+
+def _skip_to_next_step(missed_label):
+    warning(f"{missed_label} not found, skipping to next step")
+    _clear_step_wait_deadline()
+    steps = _steps()
+    gv.current_step_index = (gv.current_step_index + 1) % len(steps)
+    next_step = steps[gv.current_step_index]
+    gv.status_message = f"Skipped {missed_label}, next: {next_step['name']}"
+    _update_status_label()
+    delay_ms = random_delay_ms(dict["timeouts"]["after_click"])
+    gv.root.after(delay_ms, stash_loop)
 
 
 def stash_loop():
@@ -39,12 +66,17 @@ def stash_loop():
     match = find_template(region, step["template"], threshold)
 
     if match is None:
+        if _step_wait_timed_out():
+            _skip_to_next_step(step["name"])
+            return
+        _ensure_step_wait_deadline()
         gv.status_message = f"Waiting for {step['name']}..."
         debug(gv.status_message)
         _update_status_label()
         gv.root.after(random_delay_ms(dict["timeouts"]["loop"]), stash_loop)
         return
 
+    _clear_step_wait_deadline()
     center_x, center_y, score = match
     info(f"Found {step['name']} at ({center_x}, {center_y}) score={score:.3f}")
     _click_at(center_x, center_y)
@@ -74,12 +106,17 @@ def _handle_open_chest_step(region, threshold):
         info(
             f"Found {chest['name']} at ({center_x}, {center_y}) score={score:.3f}, right-clicking"
         )
+        _clear_step_wait_deadline()
         _right_click_at(center_x, center_y)
         _advance_to_next_step("open_chest")
         delay_ms = random_delay_ms(dict["timeouts"]["after_click"])
         gv.root.after(delay_ms, stash_loop)
         return
 
+    if _step_wait_timed_out():
+        _skip_to_next_step("open_chest")
+        return
+    _ensure_step_wait_deadline()
     gv.status_message = "Waiting for boss_chest or chest icon..."
     debug(gv.status_message)
     _update_status_label()
@@ -116,12 +153,14 @@ def _check_combine_after_auto_fill():
     back_match = find_template(region, back_template, threshold)
 
     if back_match is None:
+        _clear_step_wait_deadline()
         gv.status_message = "Combine clicked, waiting for back_arrow..."
         debug(gv.status_message)
         _update_status_label()
         gv.root.after(random_delay_ms(dict["timeouts"]["loop"]), _click_back_after_combine)
         return
 
+    _clear_step_wait_deadline()
     back_x, back_y, back_score = back_match
     info(f"Found back_arrow at ({back_x}, {back_y}) score={back_score:.3f}")
     _click_at(back_x, back_y)
@@ -140,12 +179,17 @@ def _click_back_after_combine():
     back_match = find_template(region, back_template, threshold)
 
     if back_match is None:
+        if _step_wait_timed_out():
+            _skip_to_next_step("back_arrow after combine")
+            return
+        _ensure_step_wait_deadline()
         gv.status_message = "Waiting for back_arrow after combine..."
         debug(gv.status_message)
         _update_status_label()
         gv.root.after(random_delay_ms(dict["timeouts"]["loop"]), _click_back_after_combine)
         return
 
+    _clear_step_wait_deadline()
     back_x, back_y, back_score = back_match
     info(f"Found back_arrow at ({back_x}, {back_y}) score={back_score:.3f}")
     _click_at(back_x, back_y)
@@ -197,6 +241,7 @@ def _right_click_at(x, y):
 def reset_stash_state():
     gv.current_step_index = 0
     gv.combine_check_pending = False
+    _clear_step_wait_deadline()
     gv.status_message = "Running"
 
 

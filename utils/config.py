@@ -62,6 +62,11 @@ def _migrate_timing(section, old_key, new_key, default_min, default_max):
 def _normalize_config(config):
     """Upgrade older config.yml shapes to min/max ranges."""
     _migrate_timing(config["timeouts"], "loop_ms", "loop", 1.2, 1.8)
+    if "step_wait" not in config["timeouts"]:
+        config["timeouts"]["step_wait"] = {"min": 45.0, "max": 60.0}
+    else:
+        min_s, max_s = _seconds_range(config["timeouts"]["step_wait"])
+        config["timeouts"]["step_wait"] = {"min": min_s, "max": max_s}
 
     after_click = config["timeouts"]["after_click"]
     if not isinstance(after_click, dict):
@@ -124,6 +129,10 @@ dict = {
         "after_click": {
             "min": DoubleVar(value=config["timeouts"]["after_click"]["min"]),
             "max": DoubleVar(value=config["timeouts"]["after_click"]["max"]),
+        },
+        "step_wait": {
+            "min": DoubleVar(value=config["timeouts"]["step_wait"]["min"]),
+            "max": DoubleVar(value=config["timeouts"]["step_wait"]["max"]),
         },
     },
     "combine_flow": {
@@ -251,6 +260,10 @@ def save_data():
             "after_click": {
                 "min": dict["timeouts"]["after_click"]["min"].get(),
                 "max": dict["timeouts"]["after_click"]["max"].get(),
+            },
+            "step_wait": {
+                "min": dict["timeouts"]["step_wait"]["min"].get(),
+                "max": dict["timeouts"]["step_wait"]["max"].get(),
             },
         },
         "combine_flow": {
