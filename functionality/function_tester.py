@@ -1,0 +1,154 @@
+from pathlib import Path
+
+import win32api
+
+from functionality.image_search import grab_region, probe_template
+from utils.config import (
+    chest_check_entries,
+    dict,
+    step_entries,
+    template_path_for,
+)
+from wrappers.logging_wrapper import info
+
+_MIN_REGION_SIZE = 20
+
+Result = tuple[str, str, str]  # (check_name, status, detail) — status: PASS | WARN | FAIL
+
+
+def run_diagnostics() -> list[Result]:
+    """Run non-destructive checks (no clicks). Returns list of (name, status, detail)."""
+    results: list[Result] = []
+    threshold = dict["matching"]["threshold"].get()
+    region = _search_region()
+
+    results.append(_check_search_region(region))
+    screenshot_cv, capture_result = _check_screen_capture(region)
+    results.append(capture_result)
+
+    if screenshot_cv is None:
+        results.extend(_check_template_files_only())
+        results.append(_check_win32_input())
+        _log_summary(results)
+        return results
+
+    for label, template_path in _configured_templates():
+        results.append(
+            _check_template_match(label, screenshot_cv, region, template_path, threshold)
+        )
+
+    results.append(_check_win32_input())
+    results.append(_check_stash_steps())
+    _log_summary(results)
+    return results
+
+
+def _search_region():
+    return (
+        dict["search_region"]["x"].get(),
+        dict["search_region"]["y"].get(),
+        dict["search_region"]["width"].get(),
+        dict["search_region"]["height"].get(),
+    )
+
+
+def _configured_templates():
+    items: list[tuple[str, str]] = []
+    for chest in chest_check_entries():
+        items.append((f"chest:{chest['name']}", chest["template"]))
+    for step in step_entries():
+        if "template" in step:
+            items.append((f"step:{step['name']}", step["template"]))
+    items.append(("combine", template_path_for(dict["combine_flow"]["template"])))
+    items.append(("combine_back", template_path_for(dict["combine_flow"]["back_template"])))
+    items.append(
+        ("periodic_stash", template_path_for(dict["periodic_stash_sort"]["stash_template"]))
+    )
+    items.append(
+        ("periodic_sort", template_path_for(dict["periodic_stash_sort"]["sort_template"]))
+    )
+    return items
+
+
+def _check_search_region(region) -> Result:
+    _x, _y, width, height = region
+    if width < _MIN_REGION_SIZE or height < _MIN_REGION_SIZE:
+        return (
+            "Search region",
+            "FAIL",
+            f"Region {width}x{height} - set via Screen tab (min {_MIN_REGION_SIZE}px)",
+        )
+    return (
+        "Search region",
+        "PASS",
+        f"{width}x{height} at ({_x}, {_y})",
+    )
+
+
+def _check_screen_capture(region):
+    try:
+        screenshot_cv = grab_region(region)
+        h, w = screenshot_cv.shape[:2]
+        return screenshot_cv, ("Screen capture", "PASS", f"Grabbed {w}x{h} BGR frame")
+    except Exception as exc:
+        return None, ("Screen capture", "FAIL", str(exc))
+
+
+def _check_template_files_only() -> list[Result]:
+    results = []
+    for label, template_path in _configured_templates():
+        path = Path(template_path)
+        if path.is_file():
+            results.append((f"Template file ({label})", "PASS", path.name))
+        else:
+            results.append((f"Template file ({label})", "FAIL", f"Missing: {path}"))
+    return results
+
+
+def _check_template_match(label, screenshot_cv, region, template_path, threshold) -> Result:
+    path = Path(template_path)
+    if not path.is_file():
+        return (f"Image finder ({label})", "FAIL", f"File missing: {path.name}")
+
+    probe = probe_template(screenshot_cv, region, template_path, threshold)
+    if probe["error"]:
+        return (f"Image finder ({label})", "FAIL", probe["error"])
+
+    score = probe["score"]
+    name = path.name
+    if probe["found"]:
+        cx, cy = probe["center"]
+        return (
+            f"Image finder ({label})",
+            "PASS",
+            f"{name} score {score:.3f} at ({cx}, {cy})",
+        )
+
+    return (
+        f"Image finder ({label})",
+        "WARN",
+        f"{name} best score {score:.3f} (threshold {threshold:.2f}) - not visible in region",
+    )
+
+
+def _check_win32_input() -> Result:
+    try:
+        x, y = win32api.GetCursorPos()
+        return ("Win32 input", "PASS", f"Cursor at ({x}, {y}); clicks not tested")
+    except Exception as exc:
+        return ("Win32 input", "FAIL", str(exc))
+
+
+def _check_stash_steps() -> Result:
+    steps = step_entries()
+    if not steps:
+        return ("Stash steps", "FAIL", "No steps configured in config.yml")
+    names = ", ".join(step["name"] for step in steps)
+    return ("Stash steps", "PASS", names)
+
+
+def _log_summary(results: list[Result]):
+    passed = sum(1 for _, status, _ in results if status == "PASS")
+    warned = sum(1 for _, status, _ in results if status == "WARN")
+    failed = sum(1 for _, status, _ in results if status == "FAIL")
+    info(f"Diagnostics: {passed} pass, {warned} warn, {failed} fail")

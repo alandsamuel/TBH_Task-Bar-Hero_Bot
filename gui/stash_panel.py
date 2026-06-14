@@ -1,8 +1,8 @@
 from functools import partial
-from tkinter import Button, Canvas, Entry, Frame, Label, Scrollbar, ttk
+from tkinter import Button, Canvas, DISABLED, Entry, Frame, Label, Scrollbar, Text, ttk
 
 import utils.global_variables as gv
-from gui.gui_functions import open_set_region_drag, popup_rectangle_window, start_stash
+from gui.gui_functions import open_set_region_drag, popup_rectangle_window, run_diagnostics, start_stash
 from utils.config import WINDOW_SCALES, dict
 
 _HELP_FONT = ("Segoe UI", 8)
@@ -242,6 +242,37 @@ def _control_tab(notebook):
         row,
         "All settings are read live while the bot runs. "
         "Config is saved to resources/config.yml when you close the app.",
+    )
+
+    row = _section(panel, row, "Diagnostics")
+    diag_frame = Frame(panel)
+    diag_frame.grid(row=row, column=0, columnspan=2, sticky="nsew", pady=(4, 4))
+    diag_scroll = Scrollbar(diag_frame, orient="vertical")
+    diag_text = Text(
+        diag_frame,
+        height=12,
+        width=52,
+        font=("Consolas", 9),
+        yscrollcommand=diag_scroll.set,
+        state=DISABLED,
+        wrap="word",
+    )
+    diag_scroll.config(command=diag_text.yview)
+    diag_text.pack(side="left", fill="both", expand=True)
+    diag_scroll.pack(side="right", fill="y")
+    row += 1
+
+    diag_button = Button(panel, text="Run diagnostics")
+    diag_button.configure(command=partial(run_diagnostics, diag_button, diag_text))
+    diag_button.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 4))
+    row += 1
+
+    row = _help(
+        panel,
+        row,
+        "Checks search region, screen capture, template files, and image finder scores for every "
+        "configured template. WARN means the search ran but nothing matched (focus game UI in region). "
+        "Set log level to DEBUG for per-template scores in the console. No clicks are performed.",
     )
 
 

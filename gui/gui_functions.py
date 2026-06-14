@@ -1,7 +1,8 @@
 from functools import partial
-from tkinter import Canvas, Frame, Label, Toplevel
+from tkinter import Canvas, Frame, Label, Toplevel, DISABLED, END, NORMAL
 
 import utils.global_variables as gv
+from functionality.function_tester import run_diagnostics as execute_diagnostics
 from functionality.stash_loop import reset_stash_state, start_periodic_stash_sort, stash_loop
 from utils.config import save_data
 from wrappers.logging_wrapper import apply_log_level, debug, info, warning
@@ -192,6 +193,65 @@ def start_stash(button):
     button.configure(text="Stop Stash", command=partial(stop_stash, button))
     stash_loop()
     start_periodic_stash_sort()
+
+
+_STATUS_COLORS = {
+    "PASS": "#1a7f37",
+    "WARN": "#9a6700",
+    "FAIL": "#cf222e",
+}
+
+
+def run_diagnostics(button, output_text):
+    apply_log_level()
+    button.configure(state=DISABLED)
+    output_text.configure(state=NORMAL)
+    output_text.delete("1.0", END)
+    output_text.insert(END, "Running diagnostics...\n")
+    output_text.configure(state=DISABLED)
+    gv.root.update_idletasks()
+
+    try:
+        results = execute_diagnostics()
+    except Exception as exc:
+        results = [("Diagnostics", "FAIL", str(exc))]
+
+    lines = []
+    for name, status, detail in results:
+        lines.append(f"[{status}] {name}: {detail}")
+
+    passed = sum(1 for _, status, _ in results if status == "PASS")
+    warned = sum(1 for _, status, _ in results if status == "WARN")
+    failed = sum(1 for _, status, _ in results if status == "FAIL")
+    lines.append("")
+    lines.append(f"Summary: {passed} pass, {warned} warn, {failed} fail")
+
+    output_text.configure(state=NORMAL)
+    output_text.delete("1.0", END)
+    for line in lines:
+        if line.startswith("[PASS]"):
+            tag = "pass"
+        elif line.startswith("[WARN]"):
+            tag = "warn"
+        elif line.startswith("[FAIL]"):
+            tag = "fail"
+        else:
+            tag = None
+        if tag:
+            output_text.insert(END, line + "\n", tag)
+        else:
+            output_text.insert(END, line + "\n")
+    output_text.tag_config("pass", foreground=_STATUS_COLORS["PASS"])
+    output_text.tag_config("warn", foreground=_STATUS_COLORS["WARN"])
+    output_text.tag_config("fail", foreground=_STATUS_COLORS["FAIL"])
+    output_text.configure(state=DISABLED)
+    button.configure(state=NORMAL)
+
+    summary = f"Diagnostics: {passed} pass, {warned} warn, {failed} fail"
+    gv.status_message = summary
+    if gv.status_label is not None:
+        gv.status_label.configure(text=summary)
+    info(summary)
 
 
 def stop_stash(button):
