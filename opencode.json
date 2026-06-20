@@ -1,0 +1,31 @@
+{
+  "name": "TBH Helper",
+  "description": "Windows-only Python helper for Task Bar Hero (TBH) — tkinter GUI, OpenCV template matching, Win32 mouse/keyboard input",
+  "version": "1.0.0",
+  "agent": {
+    "mode": "auto",
+    "instructionsFile": "AGENTS.md"
+  },
+  "customCommands": [
+    {
+      "name": "run",
+      "description": "Launch the app (tkinter GUI)",
+      "command": "python main.py"
+    },
+    {
+      "name": "verify-imports",
+      "description": "Check all imports resolve correctly",
+      "command": "python -c \"import gui.stash_panel; from utils.config import template_path_for; from functionality.stash_loop import stash_loop; print('All imports OK')\""
+    }
+  ],
+  "rules": [
+    "Windows-only project — do not introduce cross-platform abstractions",
+    "Use Win32 input via wrappers/win32api_wrapper.py — do not replace with other libraries",
+    "Process-facing name is 'Helper' — do not use 'bot' in titles, loggers, or exe names",
+    "Template paths must go through template_path_for() so window_scale works",
+    "Use random_timeout() / random_delay_ms() for delays — avoid fixed waits",
+    "Comments for non-obvious behavior only (Windows quirks, timing rationale)",
+    "Do not add .env or secret handling unless asked",
+    "Do not create git commits or PRs unless explicitly asked"
+  ]
+}

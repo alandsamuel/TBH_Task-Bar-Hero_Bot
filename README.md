@@ -83,10 +83,10 @@ Quick local build:
 
 ```bash
 pip install pyinstaller
-pyinstaller --name TBHHelper --add-data "resources;resources" --add-data "assets;assets" main.py
+pyinstaller --name Helper --add-data "resources;resources" --add-data "assets;assets" main.py
 ```
 
-Output: `dist/TBHHelper/TBHHelper.exe`
+Output: `dist/Helper/Helper.exe`
 
 ## Template images
 

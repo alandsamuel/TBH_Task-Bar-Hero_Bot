@@ -29,19 +29,19 @@ jobs:
       - name: Build executable
         run: >
           pyinstaller
-          --name TBHHelper
+          --name Helper
           --add-data "resources;resources"
           --add-data "assets;assets"
           --noconfirm
           main.py
 
       - name: Zip release folder
-        run: Compress-Archive -Path dist/TBHHelper -DestinationPath TBHHelper-Windows.zip -Force
+        run: Compress-Archive -Path dist/Helper -DestinationPath Helper-Windows.zip -Force
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: TBH Helper ${{ github.ref_name }}
-          files: TBHHelper-Windows.zip
+          name: Helper ${{ github.ref_name }}
+          files: Helper-Windows.zip
           generate_release_notes: true

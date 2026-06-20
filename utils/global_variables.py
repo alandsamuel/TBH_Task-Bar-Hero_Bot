@@ -5,8 +5,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = BASE_DIR / "resources" / "config.yml"
 
 # Shown in window title, taskbar, and console — avoid "bot" in process-facing names
-APP_DISPLAY_NAME = "TBH Helper"
-APP_LOGGER_NAME = "tbh_helper"
+APP_DISPLAY_NAME = "Helper"
+APP_LOGGER_NAME = "helper"
 
 root = Tk()
 continue_stash = False

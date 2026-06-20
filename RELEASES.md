@@ -1,6 +1,6 @@
 # Releases & builds
 
-How to build **TBH Helper** locally and publish GitHub releases.
+How to build **Helper** locally and publish GitHub releases.
 
 Workflow file: [.github/workflows/release.yml](.github/workflows/release.yml)
 
@@ -15,15 +15,15 @@ python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 pip install pyinstaller
-pyinstaller --name TBHHelper --add-data "resources;resources" --add-data "assets;assets" main.py
+pyinstaller --name Helper --add-data "resources;resources" --add-data "assets;assets" main.py
 ```
 
 Output:
 
-- Folder: `dist/TBHHelper/`
-- Executable: `dist/TBHHelper/TBHHelper.exe`
+- Folder: `dist/Helper/`
+- Executable: `dist/Helper/Helper.exe`
 
-The folder includes bundled `resources/` and `assets/`. Zip the whole `TBHHelper` folder if you want to share it manually.
+The folder includes bundled `resources/` and `assets/`. Zip the whole `Helper` folder if you want to share it manually.
 
 Do **not** commit `dist/`, `build/`, or `.exe` files to git.
 
@@ -33,7 +33,7 @@ Do **not** commit `dist/`, `build/`, or `.exe` files to git.
 
 The **Release** workflow runs when you push a version tag (`v*`, e.g. `v1.0.0`).
 
-It builds the Windows executable, zips `dist/TBHHelper/`, and creates a GitHub Release with **TBHHelper-Windows.zip** attached.
+It builds the Windows executable, zips `dist/Helper/`, and creates a GitHub Release with **Helper-Windows.zip** attached.
 
 ```bash
 git checkout main
@@ -49,8 +49,8 @@ Replace `v1.0.0` with your actual version each time. Open **Releases** on GitHub
 - [ ] Changes pushed to `main`
 - [ ] Tag name starts with `v` (e.g. `v1.0.0`)
 - [ ] **Release** workflow finished successfully
-- [ ] **TBHHelper-Windows.zip** appears on the release page
-- [ ] Smoke-test: unzip and run `TBHHelper.exe` on Windows
+- [ ] **Helper-Windows.zip** appears on the release page
+- [ ] Smoke-test: unzip and run `Helper.exe` on Windows
 
 ---
 
@@ -60,7 +60,7 @@ Replace `v1.0.0` with your actual version each time. Open **Releases** on GitHub
 |--------|-------------|
 | Release has no zip | Tag must be `v*` (e.g. `v1.0.0`), not `1.0.0` |
 | Workflow did not run | Confirm the tag was pushed: `git push origin v1.0.0` |
-| Exe won't start | Run from the unzipped `TBHHelper` folder (not only the `.exe` moved alone) |
+| Exe won't start | Run from the unzipped `Helper` folder (not only the `.exe` moved alone) |
 
 ---
 
@@ -69,5 +69,5 @@ Replace `v1.0.0` with your actual version each time. Open **Releases** on GitHub
 | Goal | Command / action |
 |------|------------------|
 | Run from source | `python main.py` |
-| Build locally | `pyinstaller --name TBHHelper --add-data "resources;resources" --add-data "assets;assets" main.py` |
+| Build locally | `pyinstaller --name Helper --add-data "resources;resources" --add-data "assets;assets" main.py` |
 | New release | `git tag v1.0.0 && git push origin v1.0.0` |

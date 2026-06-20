@@ -8,6 +8,16 @@ Windows-only Python helper for **Task Bar Hero (TBH)**. Uses **tkinter** GUI, **
 
 Entry point: `main.py` → `gui_init()` → `gv.root.mainloop()`.
 
+### Entry flow
+
+```
+main.py
+  └─ apply_process_title()        (utils/process_title.py — sets console + window title to "Helper")
+  └─ gui_init()                   (gui/gui_initializer.py — sets window size, title, close handler)
+      └─ stash_panel()            (gui/stash_panel.py — builds notebook tabs + footer start/stop)
+  └─ gv.root.mainloop()           (tkinter event loop)
+```
+
 ## Requirements
 
 - **Windows only** (pywin32, screen capture, input simulation)
@@ -45,7 +55,7 @@ assets/                # Template PNGs (base + scaled variants)
 | `timeouts.step_wait` | Max time (random in range) to poll for one missing chest/step template; then skip to next step via `_skip_to_next_step()` |
 | `log_lvl` | Applied when user clicks Start Stash (`apply_log_level()`) |
 
-Process-facing name is **`TBH Helper`** (`APP_DISPLAY_NAME` in `utils/global_variables.py`). Do not add "bot" to window titles, logger names, or packaged exe names.
+Process-facing name is **`Helper`** (`APP_DISPLAY_NAME` in `utils/global_variables.py`). Do not add "bot" to window titles, logger names, or packaged exe names.
 
 When adding new template references, wire through `template_path_for()` so window scale works.
 
@@ -73,6 +83,13 @@ Scaled templates follow naming: `{base_stem}{suffix}.png` where suffix is `""`, 
 
 If a scaled file is missing, `template_path_for()` warns and falls back to the base file.
 
+### Template files
+
+All templates in `assets/` have 4 variants (base, `_1-25`, `_1-50`, `_2`):
+- `auto_fill.png`, `back_arrow.png`, `boss_chest_icon.png`, `chest_icon.png`, `combine.png`, `sort.png`, `stash_all.png`
+
+`stash_all_1-25.png` is missing (only 3 variants exist for it).
+
 ## Coding standards
 
 - **Minimal diffs** — match existing style (plain functions, no over-abstraction).
@@ -80,6 +97,34 @@ If a scaled file is missing, `template_path_for()` warns and falls back to the b
 - Comments only for non-obvious behavior (Windows quirks, timing rationale).
 - Do not commit secrets, `venv/`, or `.cursor/`.
 - Do not create git commits or PRs unless the user asks.
+
+## Circular import note
+
+`utils/config.py` uses a **lazy import** inside `template_path_for()` to avoid a circular import with `wrappers.logging_wrapper` (which imports `dict` from config). Keep this pattern if you add new logging calls inside config helpers.
+
+## Diagnostics module
+
+`functionality/function_tester.py` provides `run_diagnostics()` — called from the **Run** tab. It tests:
+1. Search region bounds
+2. Screen capture (`ImageGrab.grab`)
+3. Template file existence
+4. Template match scores (probe vs threshold)
+5. Win32 cursor position
+6. Stash step config
+
+Each check returns a `(name, status, detail)` tuple where status is `PASS`, `WARN`, or `FAIL`.
+
+## Window/process title
+
+`utils/process_title.py` — sets both the tkinter window title and console title to `APP_DISPLAY_NAME` ("Helper"). Uses `ctypes.windll.kernel32.SetConsoleTitleW` on Windows. Avoid changing this name — do not introduce "bot" in titles or logger names.
+
+## PyInstaller spec files
+
+Two `.spec` files exist:
+- `main.spec` — `Analysis(['main.py'], ...)` → produces `dist/main/` (the correct entry point).
+- `bot.spec` — `Analysis(['bot.py'], ...)` — legacy/stale (no `bot.py` exists in repo).
+
+Use `main.spec` for builds. Both include `resources` and `assets` as data directories.
 
 ## Running locally
 
