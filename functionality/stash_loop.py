@@ -59,6 +59,13 @@ def stash_loop():
     region = _search_region()
     threshold = dict["matching"]["threshold"].get()
 
+    if not step.get("enabled", True):
+        info(f"Step '{step['name']}' is disabled, skipping")
+        _advance_to_next_step(step["name"])
+        delay_ms = random_delay_ms(dict["timeouts"]["after_click"])
+        gv.root.after(delay_ms, stash_loop)
+        return
+
     if step["name"] == "open_chest":
         _handle_open_chest_step(region, threshold)
         return
@@ -257,17 +264,28 @@ def periodic_stash_sort_loop():
     threshold = dict["matching"]["threshold"].get()
     stash_template = template_path_for(dict["periodic_stash_sort"]["stash_template"])
     sort_template = template_path_for(dict["periodic_stash_sort"]["sort_template"])
+    stash_enabled = dict["periodic_stash_sort"]["stash_enabled"].get()
+    sort_enabled = dict["periodic_stash_sort"]["sort_enabled"].get()
 
-    stash_match = find_template(region, stash_template, threshold)
-    if stash_match is not None:
-        stash_x, stash_y, stash_score = stash_match
-        info(f"Periodic: found stash_all at ({stash_x}, {stash_y}) score={stash_score:.3f}")
-        _click_at(stash_x, stash_y)
+    if stash_enabled:
+        stash_match = find_template(region, stash_template, threshold)
+        if stash_match is not None:
+            stash_x, stash_y, stash_score = stash_match
+            info(f"Periodic: found stash_all at ({stash_x}, {stash_y}) score={stash_score:.3f}")
+            _click_at(stash_x, stash_y)
 
-        gv.root.after(random_delay_ms(dict["periodic_stash_sort"]["between_clicks"]), _periodic_sort_click, region, threshold, sort_template)
+            if sort_enabled:
+                gv.root.after(random_delay_ms(dict["periodic_stash_sort"]["between_clicks"]), _periodic_sort_click, region, threshold, sort_template)
+                return
+            _periodic_finish_cycle()
+            return
+
+        debug("Periodic: stash_all not found, skipping")
+
+    if sort_enabled:
+        _periodic_sort_only(region, threshold, sort_template)
         return
 
-    debug("Periodic: stash_all not found, skipping")
     _periodic_finish_cycle()
 
 
@@ -282,6 +300,21 @@ def _periodic_sort_click(region, threshold, sort_template):
         _click_at(sort_x, sort_y)
     else:
         debug("Periodic: sort not found after stash_all")
+
+    _periodic_finish_cycle()
+
+
+def _periodic_sort_only(region, threshold, sort_template):
+    if not gv.continue_stash:
+        return
+
+    sort_match = find_template(region, sort_template, threshold)
+    if sort_match is not None:
+        sort_x, sort_y, sort_score = sort_match
+        info(f"Periodic: found sort at ({sort_x}, {sort_y}) score={sort_score:.3f}")
+        _click_at(sort_x, sort_y)
+    else:
+        debug("Periodic: sort not found")
 
     _periodic_finish_cycle()
 

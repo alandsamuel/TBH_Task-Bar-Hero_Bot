@@ -9,9 +9,8 @@ from utils.config import (
     step_entries,
     template_path_for,
 )
+from utils.constants import MIN_REGION_SIZE
 from wrappers.logging_wrapper import info
-
-_MIN_REGION_SIZE = 20
 
 Result = tuple[str, str, str]  # (check_name, status, detail) — status: PASS | WARN | FAIL
 
@@ -72,11 +71,11 @@ def _configured_templates():
 
 def _check_search_region(region) -> Result:
     _x, _y, width, height = region
-    if width < _MIN_REGION_SIZE or height < _MIN_REGION_SIZE:
+    if width < MIN_REGION_SIZE or height < MIN_REGION_SIZE:
         return (
             "Search region",
             "FAIL",
-            f"Region {width}x{height} - set via Screen tab (min {_MIN_REGION_SIZE}px)",
+            f"Region {width}x{height} - set via Screen tab (min {MIN_REGION_SIZE}px)",
         )
     return (
         "Search region",

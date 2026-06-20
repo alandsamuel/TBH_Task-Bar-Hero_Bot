@@ -4,11 +4,9 @@ from tkinter import Canvas, Frame, Label, Toplevel, DISABLED, END, NORMAL
 import utils.global_variables as gv
 from functionality.function_tester import run_diagnostics as execute_diagnostics
 from functionality.stash_loop import reset_stash_state, start_periodic_stash_sort, stash_loop
-from utils.config import save_data
+from utils.config import dict, save_data
+from utils.constants import MIN_REGION_SIZE, OVERLAY_ALPHA, STATUS_COLORS
 from wrappers.logging_wrapper import apply_log_level, debug, info, warning
-
-_MIN_REGION_SIZE = 20
-_OVERLAY_ALPHA = 0.25
 
 
 def popup_rectangle_window(button, x, y, width, height):
@@ -50,7 +48,7 @@ def open_set_region_drag(x, y, width, height):
     )
     drag = {"rect_id": None, "start_x": None, "start_y": None}
 
-    if width.get() >= _MIN_REGION_SIZE and height.get() >= _MIN_REGION_SIZE:
+    if width.get() >= MIN_REGION_SIZE and height.get() >= MIN_REGION_SIZE:
         drag["rect_id"] = _draw_region_on_canvas(
             canvas, x.get(), y.get(), width.get(), height.get(), outline="#88ff88"
         )
@@ -100,10 +98,10 @@ def open_set_region_drag(x, y, width, height):
             f"Region draw: release at ({event.x_root}, {event.y_root}) "
             f"→ {region_width}x{region_height} px"
         )
-        if region_width < _MIN_REGION_SIZE or region_height < _MIN_REGION_SIZE:
+        if region_width < MIN_REGION_SIZE or region_height < MIN_REGION_SIZE:
             warning(
                 f"Region draw: too small ({region_width}x{region_height}), "
-                f"need at least {_MIN_REGION_SIZE}px — try again"
+                f"need at least {MIN_REGION_SIZE}px — try again"
             )
             drag["start_x"] = None
             drag["start_y"] = None
@@ -134,7 +132,7 @@ def _create_overlay():
     window.resizable(False, False)
     window.attributes("-fullscreen", True)
     window.attributes("-topmost", True)
-    window.attributes("-alpha", _OVERLAY_ALPHA)
+    window.attributes("-alpha", OVERLAY_ALPHA)
     window.configure(bg="#000000")
 
     bar = Frame(window, bg="#222222", height=36)
@@ -191,15 +189,10 @@ def start_stash(button):
     gv.continue_stash = True
     reset_stash_state()
     button.configure(text="Stop Stash", command=partial(stop_stash, button))
-    stash_loop()
-    start_periodic_stash_sort()
-
-
-_STATUS_COLORS = {
-    "PASS": "#1a7f37",
-    "WARN": "#9a6700",
-    "FAIL": "#cf222e",
-}
+    if dict["features"]["main_loop"].get():
+        stash_loop()
+    if dict["features"]["periodic_stash_sort"].get():
+        start_periodic_stash_sort()
 
 
 def run_diagnostics(button, output_text):
@@ -241,9 +234,9 @@ def run_diagnostics(button, output_text):
             output_text.insert(END, line + "\n", tag)
         else:
             output_text.insert(END, line + "\n")
-    output_text.tag_config("pass", foreground=_STATUS_COLORS["PASS"])
-    output_text.tag_config("warn", foreground=_STATUS_COLORS["WARN"])
-    output_text.tag_config("fail", foreground=_STATUS_COLORS["FAIL"])
+    output_text.tag_config("pass", foreground=STATUS_COLORS["PASS"])
+    output_text.tag_config("warn", foreground=STATUS_COLORS["WARN"])
+    output_text.tag_config("fail", foreground=STATUS_COLORS["FAIL"])
     output_text.configure(state=DISABLED)
     button.configure(state=NORMAL)
 

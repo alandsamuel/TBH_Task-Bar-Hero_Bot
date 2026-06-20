@@ -1,12 +1,29 @@
 import random
 from pathlib import Path
-from tkinter import DoubleVar, IntVar, StringVar
+from tkinter import BooleanVar, DoubleVar, IntVar, StringVar
 
 from yaml import dump, safe_load
 
+from utils.constants import (
+    DEFAULT_BETWEEN_CLICKS_MAX,
+    DEFAULT_BETWEEN_CLICKS_MIN,
+    DEFAULT_CLICK_OFFSET_MAX,
+    DEFAULT_CLICK_OFFSET_MIN,
+    DEFAULT_COMBINE_WAIT_MAX,
+    DEFAULT_COMBINE_WAIT_MIN,
+    DEFAULT_INTERVAL_MAX,
+    DEFAULT_INTERVAL_MIN,
+    DEFAULT_LOOP_MAX,
+    DEFAULT_LOOP_MIN,
+    DEFAULT_MS_SPREAD,
+    DEFAULT_SECONDS_SPREAD,
+    DEFAULT_STEP_WAIT_MAX,
+    DEFAULT_STEP_WAIT_MIN,
+    DEFAULT_WINDOW_SCALE,
+    MAX_TIMEOUT,
+    WINDOW_SCALES,
+)
 from utils.global_variables import BASE_DIR, CONFIG_PATH
-
-WINDOW_SCALES = ("1", "1.25", "1.5", "2")
 _SCALE_SUFFIX = {
     "1": "",
     "1.25": "_1-25",
@@ -20,7 +37,7 @@ def _template_path(relative_path: str) -> str:
     return str((BASE_DIR / relative_path).resolve())
 
 
-def _legacy_ms_range(raw_value, default_spread=0.15):
+def _legacy_ms_range(raw_value, default_spread=DEFAULT_MS_SPREAD):
     """Parse legacy config values stored in milliseconds."""
     if isinstance(raw_value, dict):
         return int(raw_value["min"]), int(raw_value["max"])
@@ -29,7 +46,7 @@ def _legacy_ms_range(raw_value, default_spread=0.15):
     return max(0, value - spread), value + spread
 
 
-def _seconds_range(raw_value, default_spread=0.2):
+def _seconds_range(raw_value, default_spread=DEFAULT_SECONDS_SPREAD):
     if isinstance(raw_value, dict):
         return float(raw_value["min"]), float(raw_value["max"])
     value = float(raw_value)
@@ -39,7 +56,7 @@ def _seconds_range(raw_value, default_spread=0.2):
 
 def _offset_range(raw_config):
     if raw_config is None:
-        return -6, 6
+        return DEFAULT_CLICK_OFFSET_MIN, DEFAULT_CLICK_OFFSET_MAX
     if isinstance(raw_config, dict):
         return int(raw_config["min"]), int(raw_config["max"])
     value = int(raw_config)
@@ -61,11 +78,13 @@ def _migrate_timing(section, old_key, new_key, default_min, default_max):
 
 def _normalize_config(config):
     """Upgrade older config.yml shapes to min/max ranges."""
-    _migrate_timing(config["timeouts"], "loop_ms", "loop", 1.2, 1.8)
+    _migrate_timing(config["timeouts"], "loop_ms", "loop", DEFAULT_LOOP_MIN, DEFAULT_LOOP_MAX)
     if "step_wait" not in config["timeouts"]:
-        config["timeouts"]["step_wait"] = {"min": 45.0, "max": 60.0}
+        config["timeouts"]["step_wait"] = {"min": DEFAULT_STEP_WAIT_MIN, "max": DEFAULT_STEP_WAIT_MAX}
     else:
         min_s, max_s = _seconds_range(config["timeouts"]["step_wait"])
+        max_s = min(max_s, MAX_TIMEOUT)
+        min_s = min(min_s, max_s)
         config["timeouts"]["step_wait"] = {"min": min_s, "max": max_s}
 
     after_click = config["timeouts"]["after_click"]
@@ -73,19 +92,22 @@ def _normalize_config(config):
         min_s, max_s = _seconds_range(after_click)
         config["timeouts"]["after_click"] = {"min": min_s, "max": max_s}
 
-    _migrate_timing(config["combine_flow"], "wait_ms", "wait", 2.5, 3.5)
+    _migrate_timing(config["combine_flow"], "wait_ms", "wait", DEFAULT_COMBINE_WAIT_MIN, DEFAULT_COMBINE_WAIT_MAX)
 
     periodic = config["periodic_stash_sort"]
-    _migrate_timing(periodic, "interval_ms", "interval", 28.0, 32.0)
-    _migrate_timing(periodic, "between_clicks_ms", "between_clicks", 0.2, 0.6)
+    _migrate_timing(periodic, "interval_ms", "interval", DEFAULT_INTERVAL_MIN, DEFAULT_INTERVAL_MAX)
+    _migrate_timing(periodic, "between_clicks_ms", "between_clicks", DEFAULT_BETWEEN_CLICKS_MIN, DEFAULT_BETWEEN_CLICKS_MAX)
+    interval = periodic["interval"]
+    interval["max"] = min(interval["max"], MAX_TIMEOUT)
+    interval["min"] = min(interval["min"], interval["max"])
 
     if "randomization" not in config:
         config["randomization"] = {}
     offset_min, offset_max = _offset_range(config["randomization"].get("click_offset_px"))
     config["randomization"]["click_offset_px"] = {"min": offset_min, "max": offset_max}
 
-    scale = str(config.get("window_scale", "1"))
-    config["window_scale"] = scale if scale in _SCALE_SUFFIX else "1"
+    scale = str(config.get("window_scale", DEFAULT_WINDOW_SCALE))
+    config["window_scale"] = scale if scale in _SCALE_SUFFIX else DEFAULT_WINDOW_SCALE
 
     return config
 
@@ -160,6 +182,8 @@ dict = {
         "sort_template": StringVar(
             value=_load_template_basename(config["periodic_stash_sort"]["sort_template"])
         ),
+        "stash_enabled": BooleanVar(value=config["periodic_stash_sort"].get("stash_enabled", True)),
+        "sort_enabled": BooleanVar(value=config["periodic_stash_sort"].get("sort_enabled", True)),
     },
     "randomization": {
         "click_offset_px": {
@@ -177,6 +201,7 @@ dict = {
     "steps": [
         {
             "name": step["name"],
+            "enabled": BooleanVar(value=step.get("enabled", True)),
             **(
                 {"template": StringVar(value=_load_template_basename(step["template"]))}
                 if "template" in step
@@ -185,6 +210,10 @@ dict = {
         }
         for step in config["steps"]
     ],
+    "features": {
+        "main_loop": BooleanVar(value=config.get("features", {}).get("main_loop", True)),
+        "periodic_stash_sort": BooleanVar(value=config.get("features", {}).get("periodic_stash_sort", True)),
+    },
     "log_lvl": StringVar(value=config.get("log_lvl", "INFO")),
     "window_scale": StringVar(value=config["window_scale"]),
 }
@@ -234,7 +263,7 @@ def chest_check_entries():
 def step_entries():
     steps = []
     for step in dict["steps"]:
-        item = {"name": step["name"]}
+        item = {"name": step["name"], "enabled": step["enabled"].get()}
         if "template" in step:
             item["template"] = template_path_for(step["template"])
         steps.append(item)
@@ -285,6 +314,8 @@ def save_data():
             },
             "stash_template": f"assets/{base_template_name(dict['periodic_stash_sort']['stash_template'].get())}",
             "sort_template": f"assets/{base_template_name(dict['periodic_stash_sort']['sort_template'].get())}",
+            "stash_enabled": dict["periodic_stash_sort"]["stash_enabled"].get(),
+            "sort_enabled": dict["periodic_stash_sort"]["sort_enabled"].get(),
         },
         "randomization": {
             "click_offset_px": {
@@ -302,16 +333,21 @@ def save_data():
             ],
         },
         "steps": [
-            (
-                {
-                    "name": step["name"],
-                    "template": f"assets/{base_template_name(step['template'].get())}",
-                }
-                if "template" in step
-                else {"name": step["name"]}
-            )
+            {
+                "name": step["name"],
+                "enabled": step["enabled"].get(),
+                **(
+                    {"template": f"assets/{base_template_name(step['template'].get())}"}
+                    if "template" in step
+                    else {}
+                ),
+            }
             for step in dict["steps"]
         ],
+        "features": {
+            "main_loop": dict["features"]["main_loop"].get(),
+            "periodic_stash_sort": dict["features"]["periodic_stash_sort"].get(),
+        },
         "log_lvl": dict["log_lvl"].get(),
         "window_scale": dict["window_scale"].get(),
     }

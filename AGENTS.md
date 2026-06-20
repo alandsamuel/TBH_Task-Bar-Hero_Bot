@@ -146,6 +146,7 @@ Optional EXE and GitHub releases: see `RELEASES.md`. CI: `.github/workflows/rele
 | Template / scale behavior | `utils/config.py` (`template_path_for`, `scaled_template_name`) |
 | Region overlay | `gui/gui_functions.py` |
 | Randomization | `utils/config.py` helpers, callers in `stash_loop.py` |
+| Default values / magic numbers | `utils/constants.py` — import from here, do not hardcode |
 
 ## Testing changes
 

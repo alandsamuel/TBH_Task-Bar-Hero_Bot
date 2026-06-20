@@ -1,9 +1,10 @@
 from functools import partial
-from tkinter import Button, Canvas, DISABLED, Entry, Frame, Label, Scrollbar, Text, ttk
+from tkinter import Button, Canvas, Checkbutton, DISABLED, Entry, Frame, Label, Scrollbar, Text, ttk
 
 import utils.global_variables as gv
 from gui.gui_functions import open_set_region_drag, popup_rectangle_window, run_diagnostics, start_stash
-from utils.config import WINDOW_SCALES, dict
+from utils.constants import WINDOW_SCALES
+from utils.config import dict, save_data
 
 _HELP_FONT = ("Segoe UI", 8)
 _SECTION_FONT = ("Segoe UI", 10, "bold")
@@ -64,7 +65,7 @@ def _scrollable_tab(notebook, title):
 
 
 def _screen_tab(notebook):
-    panel = _scrollable_tab(notebook, "Screen")
+    panel = _scrollable_tab(notebook, "Region & Scale")
     row = 0
 
     row = _section(panel, row, "Search region")
@@ -146,8 +147,20 @@ def _screen_tab(notebook):
 
 
 def _timing_tab(notebook):
-    panel = _scrollable_tab(notebook, "Timing")
+    panel = _scrollable_tab(notebook, "Timing & Jitter")
     row = 0
+
+    row = _section(panel, row, "Save settings")
+    save_button = Button(panel, text="Save settings now")
+    save_button.configure(command=save_data)
+    save_button.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 4))
+    row += 1
+    row = _help(
+        panel,
+        row,
+        "Settings are normally saved when you close the window. "
+        "Click this to persist changes immediately to resources/config.yml.",
+    )
 
     row = _section(panel, row, "Poll delays (while waiting for UI)")
     row = _seconds_range_row(panel, row, "Loop retry", dict["timeouts"]["loop"])
@@ -213,10 +226,8 @@ def _timing_tab(notebook):
         "Helps avoid identical pixel-perfect clicks. Use negative min (e.g. -8) and positive max (e.g. 8).",
     )
 
-
 def _control_tab(notebook):
-    panel = Frame(notebook, padx=10, pady=10)
-    notebook.add(panel, text="Run")
+    panel = _scrollable_tab(notebook, "Run & Test")
 
     row = 0
     row = _section(panel, row, "Logging")
@@ -242,6 +253,58 @@ def _control_tab(notebook):
         row,
         "All settings are read live while the bot runs. "
         "Config is saved to resources/config.yml when you close the app.",
+    )
+
+    row = _section(panel, row, "Features")
+    Checkbutton(
+        panel,
+        text="Main stash loop (open chest → auto fill → stash all → close)",
+        variable=dict["features"]["main_loop"],
+        font=_LABEL_FONT,
+    ).grid(row=row, column=0, columnspan=2, sticky="w", padx=(0, 0), pady=(0, 2))
+    row += 1
+    Checkbutton(
+        panel,
+        text="Periodic stash / sort (background stash + sort on interval)",
+        variable=dict["features"]["periodic_stash_sort"],
+        font=_LABEL_FONT,
+    ).grid(row=row, column=0, columnspan=2, sticky="w", padx=(0, 0), pady=(0, 2))
+    row += 1
+    row = _help(
+        panel,
+        row,
+        "Uncheck a feature to skip it when Start Stash is clicked. "
+        "Changes take effect on the next start.",
+    )
+
+    row = _section(panel, row, "Step toggles")
+    for step in dict["steps"]:
+        Checkbutton(
+            panel,
+            text=f"Stash step: {step['name']}",
+            variable=step["enabled"],
+            font=_LABEL_FONT,
+        ).grid(row=row, column=0, columnspan=2, sticky="w", padx=(0, 0), pady=(0, 2))
+        row += 1
+    Checkbutton(
+        panel,
+        text="Periodic: stash_all",
+        variable=dict["periodic_stash_sort"]["stash_enabled"],
+        font=_LABEL_FONT,
+    ).grid(row=row, column=0, columnspan=2, sticky="w", padx=(0, 0), pady=(0, 2))
+    row += 1
+    Checkbutton(
+        panel,
+        text="Periodic: sort",
+        variable=dict["periodic_stash_sort"]["sort_enabled"],
+        font=_LABEL_FONT,
+    ).grid(row=row, column=0, columnspan=2, sticky="w", padx=(0, 0), pady=(0, 2))
+    row += 1
+    row = _help(
+        panel,
+        row,
+        "Enable or disable individual steps within the main stash loop and periodic cycle. "
+        "Disabled steps are skipped automatically.",
     )
 
     row = _section(panel, row, "Diagnostics")

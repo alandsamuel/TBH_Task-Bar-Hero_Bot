@@ -13,8 +13,8 @@ timeouts:
     min: 0.5
     max: 1.0
   step_wait:
-    min: 45.0
-    max: 60.0
+    min: 3.0
+    max: 5.0
 combine_flow:
   wait:
     min: 2.5
@@ -23,8 +23,8 @@ combine_flow:
   back_template: assets/back_arrow.png
 periodic_stash_sort:
   interval:
-    min: 28.0
-    max: 32.0
+    min: 3.0
+    max: 5.0
   between_clicks:
     min: 0.2
     max: 0.6
@@ -48,5 +48,8 @@ steps:
   template: assets/stash_all.png
 - name: close_stash
   template: assets/back_arrow.png
+features:
+  main_loop: true
+  periodic_stash_sort: true
 log_lvl: INFO
 window_scale: '1'
