@@ -6,6 +6,18 @@ Workflow file: [.github/workflows/release.yml](.github/workflows/release.yml)
 
 ---
 
+## Changelog
+
+### v0.0.1-alpha.4 (unreleased)
+
+- **Feature toggles** — each stash step (`open_chest`, `auto_fill`, `stash_all`, `close_stash`) and periodic action (`stash_all`, `sort`) now has its own enable/disable checkbox on the **Run & Test** tab. Disabled steps are skipped automatically.
+- **Timing & Jitter rework** — all timeout defaults capped at 5s max. Tab renamed from "Timing" to "Timing & Jitter". "Save settings now" button moved to the top of the tab.
+- **Tab renaming** — `Screen` → `Region & Scale`, `Run` → `Run & Test`, all scrollable.
+- **Constants file** — `utils/constants.py` extracted all magic numbers and defaults from inline code.
+- **opencode integration** — added `opencode.json` with project rules and commands; updated `AGENTS.md` with entry flow, diagnostics module, circular import note, process title, and PyInstaller spec info.
+
+---
+
 ## Local build (on your PC)
 
 Requirements: Windows, Python 3.10+

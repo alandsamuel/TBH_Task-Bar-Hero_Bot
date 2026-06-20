@@ -36,3 +36,6 @@ Desktop.ini
 
 # Test / debug artifacts
 resources/_test_canvas.png
+
+# User config (rename from config.yml.example)
+resources/config.yml

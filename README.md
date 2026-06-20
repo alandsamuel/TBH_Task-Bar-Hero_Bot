@@ -17,6 +17,7 @@ https://saweria.co/goldiegaming | https://ko-fi.com/alandtiwa
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
+copy resources\config.yml.example resources\config.yml
 python main.py
 ```
 
@@ -68,6 +69,8 @@ Wider ranges look more human but slow the loop slightly. A shorter step wait lim
 ## Configuration
 
 All settings are edited in the GUI and saved to `resources/config.yml` when you close the app. Template filenames are **base names** (e.g. `auto_fill.png`); scaled assets use suffixes `_1-25`, `_1-50`, or `_2` depending on window scale.
+
+> **First run:** copy `resources/config.yml.example` to `resources/config.yml` before launching. The `.gitignore` excludes `config.yml` so your personal settings (search region, etc.) stay out of version control.
 
 ## Architecture
 
